@@ -1,0 +1,22 @@
+      _  __
+  ___| |/ _| ___ _ __   ___ ___
+ / _ \ | |_ / _ \ '_ \ / __/ _ \
+|  __/ |  _|  __/ | | | (_|  __/
+ \___|_|_|  \___|_| |_|\___\___|
+
+Overview
+========
+
+elfence is a FUSE (http://fuse.sourceforge.net/) based file system that verifies
+Ed25519 (https://github.com/orlp/ed25519) signatures appended to ELF binaries.
+
+Its implementation is derived from logfence (https://github.com/dimkr/logfence).
+
+Credits and Legal Information
+=============================
+
+elfence is free and unencumbered software released under the terms of the MIT
+license; see COPYING for the license text. For a list of its authors and
+contributors, see AUTHORS.
+
+The ASCII art logo at the top was made using FIGlet (http://www.figlet.org/).
