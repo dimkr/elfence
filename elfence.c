@@ -84,12 +84,17 @@ static void ef_destroy(void *private_data)
 static int ef_access(const char *name, int mask)
 {
 	const struct ef_ctx *ef_ctx;
+	const char *rname;
 
 	ef_ctx = get_ctx(NULL);
 	if (NULL == ef_ctx)
 		return -ENOMEM;
 
-	if (-1 == faccessat(ef_ctx->fd, &name[1], mask, AT_SYMLINK_NOFOLLOW))
+	if (0 == strcmp("/", name))
+		rname = ".";
+	else
+		rname = &name[1];
+	if (-1 == faccessat(ef_ctx->fd, rname, mask, 0))
 		return -errno;
 
 	return 0;
@@ -115,6 +120,7 @@ static int stat_internal(const char *name,
 
 	return 0;
 }
+
 static int ef_stat(const char *name, struct stat *stbuf)
 {
 	return stat_internal(name, stbuf, false);
@@ -198,7 +204,7 @@ static int ef_create(const char *name,
 	if (0 > fd)
 		return fd;
 
-	if (-1 == fchownat(fd,
+	if (-1 == fchownat(ef_ctx->fd,
 	                   &name[1],
 	                   ctx->uid,
 	                   ctx->gid,
@@ -232,7 +238,7 @@ static int ef_truncate(const char *name, off_t size)
 	return ret;
 }
 
-static int verify_elf(const int fd, const int flags)
+static int verify_elf(const char *name, const int fd, const int flags)
 {
 	struct stat stbuf;
 	void *data;
@@ -248,10 +254,9 @@ static int verify_elf(const int fd, const int flags)
 	if (NULL == ef_ctx)
 		goto end;
 
-	if (-1 == fstat(fd, &stbuf)) {
-		ret = -errno;
+	ret = stat_internal(name, &stbuf, true);
+	if (0 != ret)
 		goto end;
-	}
 
 	if (SELFMAG >= stbuf.st_size) {
 		ret = 0;
@@ -304,7 +309,7 @@ static int ef_open(const char *name, struct fuse_file_info *fi)
 	if (0 > fd)
 		return fd;
 
-	ret = verify_elf(fd, fi->flags);
+	ret = verify_elf(name, fd, fi->flags);
 	if (0 == ret) {
 		fi->fh = (uint64_t) fd;
 		return 0;
@@ -629,7 +634,7 @@ static struct fuse_operations ef_oper = {
 
 int main(int argc, char *argv[])
 {
-	char *fuse_argv[] = {argv[0], "-ononempty", argv[1],  NULL};
+	char *fuse_argv[] = {argv[0], "-ononempty", argv[1], NULL};
 	struct ef_ctx ctx;
 	struct stat stbuf;
 	int key_fd;
